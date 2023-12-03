@@ -33,7 +33,7 @@ struct game_object{
 };
 
 enum class Environment_types{
-    player, sky
+    player, sky, explosion, cloud
 };
 
 enum class Aircraft_types{
@@ -41,8 +41,10 @@ enum class Aircraft_types{
 };
 
 const std::map<Environment_types, game_object> ENVIRONMENT_OBJECTS{
-    {Environment_types::player,        { 100,   40,     800, "Images/player.png",             "",                                  Draw_types::rectangle}},
-    {Environment_types::sky,           { WIDTH, HEIGHT, 800, "Images/sky.jpg",                "",                                  Draw_types::rectangle}},
+    {Environment_types::player,    { 100,   40,     800, "Images/player.png",    "",  Draw_types::rectangle}},
+    {Environment_types::sky,       { WIDTH, HEIGHT, 800, "Images/sky.jpg",       "",  Draw_types::rectangle}},
+    {Environment_types::explosion, { 300,   250,    800, "Images/explosion.png", "",  Draw_types::rectangle}},
+    {Environment_types::cloud,     { 600,   300,    800, "Images/cloud.png",     "",  Draw_types::rectangle}},
     };
 
 const std::map<Aircraft_types, game_object> AIRCRAFT_OBJECTS{
@@ -112,7 +114,8 @@ public:
     Player player;
     std::vector<GameObject*> background_objects;
     std::vector<GameObject*> aircraft_objects;
-    GameObject * q;
+    GameObject* explosion;
+    bool game_over = false;
     Game(/* args */);
     ~Game();
     void init_game();
@@ -124,6 +127,8 @@ public:
     void create_aircrafts();
     void delete_aircrafts();
     void cycle();
+    void check_game_over();
+    void delete_empty_aircrafts();
 };
 
 int main();

@@ -10,6 +10,15 @@ int main()
     Game game; 
     game.init_game();
 
+    sf::Text text;
+    sf::Font font;
+    font.loadFromFile("ofont.ru_Tiff-Heavy.ttf");
+    text.setString("Game over");
+    text.setCharacterSize(34);
+    text.setFillColor(sf::Color::Red);
+    text.setFont(font);
+    text.setPosition(300, 300);
+
     while (window.isOpen())
     {
         game.create_aircrafts();
@@ -22,18 +31,27 @@ int main()
             game.process_events(event);
         }
         game.cycle();
+
+        game.check_game_over();
         
         // Background objects
         for (auto bg : game.background_objects)
             window.draw(*(*bg).get_object());
         // Player object
         game.player.move();
-        window.draw(*game.player.get_object());
+        if (game.game_over == false)
+            window.draw(*game.player.get_object());
+        else
+            window.draw(*game.explosion->get_object());
         // Aircraft object
         for (auto & ac : game.aircraft_objects){
             window.draw(*(*ac).get_object());
             ac->move();
         }
+
+        if (game.game_over == true)
+            window.draw(text);
+        
         
         window.display();
         window.clear();
@@ -54,6 +72,7 @@ Game::~Game()
 void Game::init_game(){
     // Sky
     background_objects.push_back(new GameObject(ENVIRONMENT_OBJECTS.at(Environment_types::sky), sf::Vector2f(0,0)));
+    // background_objects.push_back(new GameObject(ENVIRONMENT_OBJECTS.at(Environment_types::cloud), sf::Vector2f(0,0)));
     //Player
     Player player;
     srand(time(0));
@@ -125,8 +144,6 @@ void Game::create_aircrafts(){
 }
 
 void Game::delete_aircrafts(){
-    // std::vector<GameObject>::iterator iter;
-    // iter = aircraft_objects.begin();
     for (auto & ac : aircraft_objects)
     {   
         sf::RectangleShape* rect_object = (sf::RectangleShape*) (ac->get_object());
@@ -136,36 +153,51 @@ void Game::delete_aircrafts(){
             ac = nullptr;
         }
     }
-    // std::vector<GameObject*> aircraft_objects2;
-    // std::copy (aircraft_objects.begin(), aircraft_objects.end(), aircraft_objects2.begin());
-    // std::erase_if(aircraft_objects,[](auto const & x) { return x == nullptr; }); // C++20
-
-    for (auto first = aircraft_objects.begin(), last = aircraft_objects.end(); first != last;){
-        if (!aircraft_objects.empty() and (*first) == nullptr)
-            first = aircraft_objects.erase(first);
-        else
-            ++first;
-    }
-
-    // bool deleted;
-    // while (true)
-    // {   
-    //     deleted = false;
-    //     for (auto first = aircraft_objects2.begin(), last = aircraft_objects2.end(); first != last;){
-    //         if ((*first) == nullptr){
-    //             first = aircraft_objects.erase(first);
-    //             deleted = true;
-    //             break;
-    //         }
-    //     }
-        
-    // }
-    
+    delete_empty_aircrafts();
 }
 
 void Game::cycle(){
     clock_player.restart();
     clock_aircrafts.restart();
+}
+
+void Game::delete_empty_aircrafts(){
+    // std::erase_if(aircraft_objects,[](auto const & x) { return x == nullptr; }); // C++20
+    for (auto first = aircraft_objects.begin(), last = aircraft_objects.end(); first != last;){
+    if (!aircraft_objects.empty() and (*first) == nullptr)
+        first = aircraft_objects.erase(first);
+    else
+        ++first;
+    }
+}
+
+void Game::check_game_over(){
+    sf::RectangleShape * rect_shape_pl = (sf::RectangleShape*) player.get_object();
+    // bool result = false;
+    sf::Vector2f position;
+    if (game_over == false){
+        for (auto & ac : aircraft_objects)
+        {
+            sf::RectangleShape * rect_shape_ac = (sf::RectangleShape*) ac->get_object();
+            auto a = rect_shape_pl->getGlobalBounds();
+            auto b = rect_shape_ac->getGlobalBounds();
+            game_over = a.intersects(b);
+            if (game_over == true){
+                position = rect_shape_pl->getPosition();
+                delete ac;
+                ac = nullptr;
+                break;
+            }
+            
+        }
+        if (game_over == true){
+            delete_empty_aircrafts();
+            // position.x -= 800;
+            // position.y -= 800;
+            explosion = new GameObject(ENVIRONMENT_OBJECTS.at(Environment_types::explosion), 
+                sf::Vector2f(position.x - 100, position.y - 100));
+        }
+    }  
 }
 
 GameObject::GameObject(game_object game_object, sf::Vector2f position){
